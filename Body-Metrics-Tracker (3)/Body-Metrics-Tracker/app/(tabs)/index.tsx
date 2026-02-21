@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -34,6 +34,7 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { profile, selectedMeasurements, selectedRatios, customRatios, customMeasurements, entries, isLoading } =
     useAppData();
+  const [expandedEntryIds, setExpandedEntryIds] = useState<Record<string, boolean>>({});
 
   if (!isLoading && (!profile || !profile.onboardingComplete)) {
     return <Redirect href="/onboarding" />;
@@ -366,7 +367,19 @@ export default function DashboardScreen() {
               Recent Entries
             </Text>
             {recentEntries.map((entry) => {
-              const valueKeys = Object.keys(entry.values).slice(0, 3);
+              const allValueKeys = Object.keys(entry.values);
+              const isExpanded = !!expandedEntryIds[String(entry.id)];
+              const valueKeys = isExpanded ? allValueKeys : allValueKeys.slice(0, 3);
+              const hiddenCount = allValueKeys.length - valueKeys.length;
+
+              const toggleExpanded = () => {
+                const entryId = String(entry.id);
+                setExpandedEntryIds((prev) => ({
+                  ...prev,
+                  [entryId]: !prev[entryId],
+                }));
+              };
+
               return (
                 <View
                   key={entry.id}
@@ -416,15 +429,17 @@ export default function DashboardScreen() {
                         </Text>
                       </View>
                     ))}
-                    {Object.keys(entry.values).length > 3 && (
-                      <Text
-                        style={[
-                          styles.moreText,
-                          { color: colors.textTertiary, fontFamily: "Inter_400Regular" },
-                        ]}
-                      >
-                        +{Object.keys(entry.values).length - 3} more
-                      </Text>
+                    {allValueKeys.length > 3 && (
+                      <Pressable onPress={toggleExpanded}>
+                        <Text
+                          style={[
+                            styles.moreText,
+                            { color: colors.textTertiary, fontFamily: "Inter_400Regular" },
+                          ]}
+                        >
+                          {isExpanded ? "Show less" : `+${hiddenCount} more`}
+                        </Text>
+                      </Pressable>
                     )}
                   </View>
                 </View>
